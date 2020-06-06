@@ -134,7 +134,11 @@ fn root_directory() -> io::Result<()> {
         .output()?;
     let actual = String::from_utf8(output.stdout).unwrap();
 
-    let expected = format!("in {} ", Color::Cyan.bold().paint("/"));
+    let expected = format!(
+        "in {}{} ",
+        Color::Cyan.bold().paint("/"),
+        Color::Red.normal().paint("🔒")
+    );
     assert_eq!(expected, actual);
     Ok(())
 }
@@ -150,7 +154,11 @@ fn test_prefix() -> io::Result<()> {
         .output()?;
     let actual = String::from_utf8(output.stdout).unwrap();
 
-    let expected = format!("sample {} ", Color::Cyan.bold().paint("/"));
+    let expected = format!(
+        "sample {}{} ",
+        Color::Cyan.bold().paint("/"),
+        Color::Red.normal().paint("🔒")
+    );
     assert_eq!(expected, actual);
     Ok(())
 }
@@ -163,7 +171,11 @@ fn directory_in_root() -> io::Result<()> {
         .output()?;
     let actual = String::from_utf8(output.stdout).unwrap();
 
-    let expected = format!("in {} ", Color::Cyan.bold().paint("/etc"));
+    let expected = format!(
+        "in {}{} ",
+        Color::Cyan.bold().paint("/etc"),
+        Color::Red.normal().paint("🔒")
+    );
     assert_eq!(expected, actual);
     Ok(())
 }

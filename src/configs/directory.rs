@@ -1,4 +1,4 @@
-use crate::config::{ModuleConfig, RootModuleConfig};
+use crate::config::{ModuleConfig, RootModuleConfig, SegmentConfig};
 use std::collections::HashMap;
 
 use ansi_term::{Color, Style};
@@ -14,6 +14,8 @@ pub struct DirectoryConfig<'a> {
     pub prefix: &'a str,
     pub style: Style,
     pub disabled: bool,
+    pub read_only_symbol: SegmentConfig<'a>,
+    pub read_only_symbol_style: Style,
 }
 
 impl<'a> RootModuleConfig<'a> for DirectoryConfig<'a> {
@@ -27,6 +29,8 @@ impl<'a> RootModuleConfig<'a> for DirectoryConfig<'a> {
             prefix: "in ",
             style: Color::Cyan.bold(),
             disabled: false,
+            read_only_symbol: SegmentConfig::new("🔒"),
+            read_only_symbol_style: Color::Red.normal(),
         }
     }
 }

@@ -1,3 +1,7 @@
+#[cfg(not(target_os = "windows"))]
+use super::utils::directory_nix as directory_utils;
+#[cfg(target_os = "windows")]
+use super::utils::directory_win as directory_utils;
 use path_slash::PathExt;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -104,9 +108,32 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
         },
     );
 
+    if is_readonly_dir(current_dir.to_str()?) {
+        module.create_segment(
+            "read_only_symbol",
+            &config
+                .read_only_symbol
+                .with_style(Some(config.read_only_symbol_style)),
+        );
+    }
+
     module.get_prefix().set_value(config.prefix);
 
     Some(module)
+}
+
+fn is_readonly_dir(path: &str) -> bool {
+    match directory_utils::is_write_allowed(path) {
+        Ok(res) => !res,
+        Err(e) => {
+            log::debug!(
+                "Failed to detemine read only status of directory '{}': {}",
+                path,
+                e
+            );
+            false
+        }
+    }
 }
 
 /// Contract the root component of a path

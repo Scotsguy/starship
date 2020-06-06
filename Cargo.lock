@@ -1124,6 +1124,7 @@ dependencies = [
  "dirs",
  "gethostname",
  "git2",
+ "libc",
  "log",
  "native-tls",
  "nom",
@@ -1147,6 +1148,7 @@ dependencies = [
  "unicode-segmentation",
  "unicode-width",
  "urlencoding",
+ "winapi",
  "yaml-rust",
 ]
 
