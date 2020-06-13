@@ -1,47 +1,30 @@
-extern crate libc;
-#[cfg(all(unix, not(target_os = "macos")))]
-use libc::gid_t;
-use std::ffi::CString;
+use nix::sys::stat::Mode;
+use nix::unistd::{Gid, Uid};
+use std::fs;
+use std::os::linux::fs::MetadataExt;
+use std::os::unix::fs::PermissionsExt;
 
-pub fn is_write_allowed(folder_path: &str) -> std::result::Result<bool, &'static str> {
-    let c_string = CString::new(folder_path).unwrap();
-    unsafe {
-        let mut buf: Vec<u8> = Vec::with_capacity(std::mem::size_of::<libc::stat>());
-        let res = libc::stat(c_string.as_ptr(), buf.as_mut_ptr() as *mut libc::stat);
+const USER_WRITE_BIT: u32 = Mode::S_IWUSR.bits();
+const GROUP_WRITE_BIT: u32 = Mode::S_IWGRP.bits();
+const OTHER_WRITE_BIT: u32 = Mode::S_IWOTH.bits();
 
-        if res != 0 {
-            return Err("Unable to stat() directory");
-        }
+pub fn is_write_allowed(folder_path: &str) -> Result<bool, &'static str> {
+    let meta = fs::metadata(folder_path).map_err(|_| "Unable to stat() directory")?;
+    let perms = meta.permissions().mode();
 
-        let stat_struct: *const libc::stat = buf.as_ptr() as *const libc::stat;
-        let mode = (*stat_struct).st_mode;
-        if (*stat_struct).st_uid == libc::geteuid() {
-            return Ok(mode & libc::S_IWUSR != 0);
-        }
-        if (*stat_struct).st_gid == libc::getgid() {
-            return Ok(mode & libc::S_IWGRP != 0);
-        }
+    let euid = Uid::effective();
+    if euid.is_root() {
+        return Ok(true);
+    }
 
-        let num_groups = libc::getgroups(0, ::std::ptr::null_mut());
-        if num_groups == -1 {
-            return Err("Unable to get suplementary groups for the current process");
-        }
-        #[cfg(all(unix, target_os = "macos"))]
-        let mut groups: Vec<i32> = vec![0; 1024];
-        #[cfg(all(unix, not(target_os = "macos")))]
-        let mut groups: Vec<gid_t> = vec![0; 1024];
-        let res = libc::getgroups(num_groups, groups.as_mut_ptr());
-        if res == -1 {
-            return Err("Unable to get suplementary groups for the current process");
-        }
+    // The kernel only ever checks the most appropriate permissions for a file
 
-        for i in 0..num_groups {
-            if groups[i as usize] == (*stat_struct).st_gid {
-                return Ok(mode & libc::S_IWGRP != 0);
-            }
-        }
-
-        return Ok(mode & libc::S_IWOTH != 0);
+    if meta.st_uid() == euid.as_raw() {
+        Ok(perms & USER_WRITE_BIT != 0)
+    } else if meta.st_gid() == Gid::effective().as_raw() {
+        Ok(perms & GROUP_WRITE_BIT != 0)
+    } else {
+        Ok(perms & OTHER_WRITE_BIT != 0)
     }
 }
 
